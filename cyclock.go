@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"math"
 	"time"
@@ -11,9 +12,12 @@ import (
 )
 
 const (
-	fontPath = "./assets/font.ttf"
+	fontPath = "assets/font.ttf"
 	fontSize = 26
 )
+
+//go:embed assets/*.png assets/*.ttf
+var assets embed.FS
 
 var CircleSurface *sdl.Surface
 
@@ -22,17 +26,6 @@ func drawDot(surface *sdl.Surface, x, y int, radius int, dc sdl.Color) {
 		X: int32(x - radius),
 		Y: int32(y - radius),
 		W: 0, H: 0})
-	/*
-	   	rect := sdl.Rect{
-	   		X: int32(x - radius),
-	   		Y: int32(y - radius),
-	   		W: int32(2 * radius),
-	   		H: int32(2 * radius),
-	   	}
-
-	   pixel := sdl.MapRGBA(surface.Format, dc.R, dc.G, dc.B, dc.A)
-	   surface.FillRect(&rect, pixel)
-	*/
 }
 
 func positionAtAngle(cx, cy, a, r0, aq, r1 int) (int, int) {
@@ -59,8 +52,6 @@ func drawDial(surface *sdl.Surface, color, selcolor sdl.Color, min int, paddle *
 
 	rt0 := 120
 	rt1 := 360
-	//rt0 := 180
-	//rt1 := 300
 	if a0 >= rt0 {
 		aq += (a0 - rt0) * (90 - 360*2) / (rt1 - rt0)
 	}
@@ -73,10 +64,6 @@ func drawDial(surface *sdl.Surface, color, selcolor sdl.Color, min int, paddle *
 			//return
 		}
 	}
-
-	// if dial == 0 {
-	// 	fmt.Printf("min %d , s = %d - a = %d, q = %d, aq = %d\n", min, s, a0, q, aq)
-	// }
 
 	r0 := 190
 	r1 := 260 - r0
@@ -109,7 +96,7 @@ func getTime() int {
 	}
 	t := time.Now()
 
-	h := t.Hour() % 12
+	h := t.Hour() //% 12
 	m := t.Minute()
 
 	return m + h*60
@@ -119,7 +106,40 @@ func formatTime(tim int) string {
 	m := tim % 60
 	h := tim / 60
 
-	return fmt.Sprintf("%d:%02d", h, m)
+	return fmt.Sprintf("time: %2d:%02d", h, m)
+}
+
+func assetsFont(path string, size int) *ttf.Font {
+	raw, err := assets.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	rwo, err := sdl.RWFromMem(raw)
+	if err != nil {
+		panic(err)
+	}
+	font, err := ttf.OpenFontRW(rwo, 0, size)
+	if err != nil {
+		panic(err)
+	}
+
+	return font
+}
+
+func assetsImage(path string) *sdl.Surface {
+	raw, err := assets.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	rwo, err := sdl.RWFromMem(raw)
+	if err != nil {
+		panic(err)
+	}
+	surf, err := img.LoadRW(rwo, false)
+	if err != nil {
+		panic(err)
+	}
+	return surf
 }
 
 func main() {
@@ -133,11 +153,7 @@ func main() {
 	}
 	defer sdl.Quit()
 
-	// Load the font for our text
-	font, err := ttf.OpenFont(fontPath, fontSize)
-	if err != nil {
-		panic(err)
-	}
+	font := assetsFont(fontPath, fontSize)
 	defer font.Close()
 
 	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
@@ -147,16 +163,8 @@ func main() {
 	}
 	defer window.Destroy()
 
-	quadrant, err := img.Load("./assets/quadrant.png")
-	if err != nil {
-		panic(err)
-	}
-	//defer quadrant.Close()
-
-	CircleSurface, err = img.Load("./assets/dot.png")
-	if err != nil {
-		panic(err)
-	}
+	quadrant := assetsImage("assets/quadrant.png")
+	CircleSurface = assetsImage("assets/dot.png")
 
 	surface, err := window.GetSurface()
 	if err != nil {
