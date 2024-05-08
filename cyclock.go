@@ -21,7 +21,7 @@ var assets embed.FS
 
 var CircleSurface *sdl.Surface
 
-func drawDot(surface *sdl.Surface, x, y int, radius int, dc sdl.Color) {
+func drawDot(surface *sdl.Surface, x, y int, radius int) {
 	CircleSurface.Blit(nil, surface, &sdl.Rect{
 		X: int32(x - radius),
 		Y: int32(y - radius),
@@ -38,14 +38,13 @@ func positionAtAngle(cx, cy, a, r0, aq, r1 int) (int, int) {
 	return x, y
 }
 
-func drawDial(surface *sdl.Surface, color, selcolor sdl.Color, min int, paddle *sdl.Surface, dial int) {
+func drawDial(surface *sdl.Surface, minutes int, paddle *sdl.Surface, dial int) {
 
 	hour := dial % 12
-	min += 60 * hour
+	minutes += 60 * hour
 
-	a0 := (min * 120 / 60) % 360
-	h := min / 60
-	//s := h % 4
+	a0 := (minutes * 120 / 60) % 360
+	h := minutes / 60
 
 	q := ((h / 3) * 90) % 360
 	aq := q
@@ -56,15 +55,6 @@ func drawDial(surface *sdl.Surface, color, selcolor sdl.Color, min int, paddle *
 		aq += (a0 - rt0) * (90 - 360*2) / (rt1 - rt0)
 	}
 
-	c := color
-	if a0 >= 0 && a0 < 120 {
-		if aq == 0 {
-			c = selcolor
-			//} else {
-			//return
-		}
-	}
-
 	r0 := 190
 	r1 := 260 - r0
 	rd := 20
@@ -73,7 +63,7 @@ func drawDial(surface *sdl.Surface, color, selcolor sdl.Color, min int, paddle *
 	a1 := a0 + aq
 
 	x, y := positionAtAngle(300, 300, a0, r0, a1, r1)
-	drawDot(surface, x, y, rd, c)
+	drawDot(surface, x, y, rd)
 
 	paddle.Blit(nil, surface, &sdl.Rect{
 		X: int32(x) - (paddle.W / 2),
@@ -153,9 +143,6 @@ func main() {
 	}
 	defer sdl.Quit()
 
-	font := assetsFont(fontPath, fontSize)
-	defer font.Close()
-
 	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		600, 600, sdl.WINDOW_SHOWN)
 	if err != nil {
@@ -163,6 +150,7 @@ func main() {
 	}
 	defer window.Destroy()
 
+	font := assetsFont(fontPath, fontSize)
 	quadrant := assetsImage("assets/quadrant.png")
 	CircleSurface = assetsImage("assets/dot.png")
 
@@ -192,30 +180,17 @@ func main() {
 
 	go func() {
 
-		color := sdl.Color{R: 255, G: 0, B: 255, A: 120}    // purple
-		color1 := sdl.Color{R: 255, G: 255, B: 255, A: 120} // white
-		color2 := sdl.Color{R: 255, G: 0, B: 0, A: 120}     // red
-		selcolor := sdl.Color{R: 0, G: 0, B: 255, A: 255}   // yellow
-
 		for {
 			if !running {
 				return
 			}
-			min := getTime()
+			minutes := getTime()
 			surface.FillRect(nil, 0)
 
-			window.SetTitle(formatTime(min))
+			window.SetTitle(formatTime(minutes))
 
 			for j := range 12 {
-				var c sdl.Color
-				if j == 0 {
-					c = color1
-				} else if j < 3 {
-					c = color2
-				} else {
-					c = color
-				}
-				drawDial(surface, c, selcolor, min, paddle[j], j)
+				drawDial(surface, minutes, paddle[j], j)
 			}
 
 			quadrant.Blit(nil, surface, &sdl.Rect{
