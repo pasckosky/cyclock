@@ -5,46 +5,34 @@ import (
 	"math"
 	"time"
 
+	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 )
 
 const (
 	fontPath = "./assets/font.ttf"
-	fontSize = 32
+	fontSize = 26
 )
 
 var CircleSurface *sdl.Surface
 
 func drawDot(surface *sdl.Surface, x, y int, radius int, dc sdl.Color) {
-	rect := sdl.Rect{
+	CircleSurface.Blit(nil, surface, &sdl.Rect{
 		X: int32(x - radius),
 		Y: int32(y - radius),
-		W: int32(2 * radius),
-		H: int32(2 * radius),
-	}
-	pixel := sdl.MapRGBA(surface.Format, dc.R, dc.G, dc.B, dc.A)
-
+		W: 0, H: 0})
 	/*
-		if CircleSurface == nil {
-			CircleSurface, err := sdl.CreateRGBSurface(0, int32(radius)*2, int32(radius)*2, 8, 0, 0, 0, 0)
-			if err != nil {
-				panic(err)
-			}
+	   	rect := sdl.Rect{
+	   		X: int32(x - radius),
+	   		Y: int32(y - radius),
+	   		W: int32(2 * radius),
+	   		H: int32(2 * radius),
+	   	}
 
-			rdf := float64(radius)
-			for a := range 360 {
-				ar := float64(a) * 180.0 / math.Pi
-				px := rdf + rdf*math.Cos(ar)
-				py := rdf + rdf*math.Sin(ar)
-
-				CircleSurface.Set(int(px), int(py), color.RGBA{R: dc.R, G: dc.G, B: dc.B, A: dc.A})
-			}
-
-		}
+	   pixel := sdl.MapRGBA(surface.Format, dc.R, dc.G, dc.B, dc.A)
+	   surface.FillRect(&rect, pixel)
 	*/
-	//surface.
-	surface.FillRect(&rect, pixel)
 }
 
 func positionAtAngle(cx, cy, a, r0, aq, r1 int) (int, int) {
@@ -64,26 +52,35 @@ func drawDial(surface *sdl.Surface, color, selcolor sdl.Color, min int, paddle *
 
 	a0 := (min * 120 / 60) % 360
 	h := min / 60
-	s := h % 4
+	//s := h % 4
 
 	q := ((h / 3) * 90) % 360
 	aq := q
-	if a0 > 120 {
-		aq += (a0 - 120) * (90 - 360*2) / 240
+
+	rt0 := 120
+	rt1 := 360
+	//rt0 := 180
+	//rt1 := 300
+	if a0 >= rt0 {
+		aq += (a0 - rt0) * (90 - 360*2) / (rt1 - rt0)
 	}
 
 	c := color
-	if a0 >= 0 && a0 <= 120 && aq == 0 {
-		c = selcolor
+	if a0 >= 0 && a0 < 120 {
+		if aq == 0 {
+			c = selcolor
+			//} else {
+			//return
+		}
 	}
 
-	if dial == 0 {
-		fmt.Printf("min %d , s = %d - a = %d, q = %d, aq = %d\n", min, s, a0, q, aq)
-	}
+	// if dial == 0 {
+	// 	fmt.Printf("min %d , s = %d - a = %d, q = %d, aq = %d\n", min, s, a0, q, aq)
+	// }
 
-	r0 := 200
-	r1 := 60
-	rd := 30
+	r0 := 190
+	r1 := 260 - r0
+	rd := 20
 
 	a0 -= 60
 	a1 := a0 + aq
@@ -96,6 +93,33 @@ func drawDial(surface *sdl.Surface, color, selcolor sdl.Color, min int, paddle *
 		Y: int32(y) - (paddle.H / 2),
 		W: 0, H: 0})
 
+}
+
+var bigT int = 0
+
+const debug bool = false
+
+func getTime() int {
+
+	if debug {
+		bigT += 1
+		bigT %= 720
+		return bigT
+
+	}
+	t := time.Now()
+
+	h := t.Hour() % 12
+	m := t.Minute()
+
+	return m + h*60
+}
+
+func formatTime(tim int) string {
+	m := tim % 60
+	h := tim / 60
+
+	return fmt.Sprintf("%d:%02d", h, m)
 }
 
 func main() {
@@ -123,6 +147,17 @@ func main() {
 	}
 	defer window.Destroy()
 
+	quadrant, err := img.Load("./assets/quadrant.png")
+	if err != nil {
+		panic(err)
+	}
+	//defer quadrant.Close()
+
+	CircleSurface, err = img.Load("./assets/dot.png")
+	if err != nil {
+		panic(err)
+	}
+
 	surface, err := window.GetSurface()
 	if err != nil {
 		panic(err)
@@ -148,7 +183,6 @@ func main() {
 	}()
 
 	go func() {
-		min := 0
 
 		color := sdl.Color{R: 255, G: 0, B: 255, A: 120}    // purple
 		color1 := sdl.Color{R: 255, G: 255, B: 255, A: 120} // white
@@ -159,7 +193,10 @@ func main() {
 			if !running {
 				return
 			}
+			min := getTime()
 			surface.FillRect(nil, 0)
+
+			window.SetTitle(formatTime(min))
 
 			for j := range 12 {
 				var c sdl.Color
@@ -172,16 +209,24 @@ func main() {
 				}
 				drawDial(surface, c, selcolor, min, paddle[j], j)
 			}
+
+			quadrant.Blit(nil, surface, &sdl.Rect{
+				X: 0,
+				Y: 0,
+				W: 0, H: 0})
 			window.UpdateSurface()
 
-			min += 5
-			min %= 720
-
-			<-time.After(100 * time.Millisecond)
+			if debug {
+				<-time.After(100 * time.Millisecond)
+			} else {
+				<-time.After(1000 * time.Millisecond)
+			}
 		}
 	}()
 
 	for running {
+		<-time.After(100 * time.Millisecond)
+
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			et := event.GetType()
 
