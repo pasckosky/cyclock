@@ -52,6 +52,17 @@ func assetsImage(path string) *sdl.Surface {
 	return surf
 }
 
+func drawLine(surface *sdl.Surface, x1, y1, x2, y2 int) {
+	renderer, err := sdl.CreateSoftwareRenderer(surface)
+	if err != nil {
+		panic(err)
+	}
+	defer renderer.Destroy()
+
+	renderer.SetDrawColor(255, 255, 255, 255) // Set color to red
+	renderer.DrawLine(int32(x1), int32(y1), int32(x2), int32(y2))
+}
+
 func drawDial(surface *sdl.Surface, dot *sdl.Surface, minutes int, paddle *sdl.Surface, dial int) {
 
 	drawDot := func(surface *sdl.Surface, x, y int, radius int) {
@@ -86,15 +97,26 @@ func drawDial(surface *sdl.Surface, dot *sdl.Surface, minutes int, paddle *sdl.S
 		aq += (a0 - rt0) * (90 - 360*2) / (rt1 - rt0)
 	}
 
-	r0 := 190
+	r0 := 170
 	r1 := 260 - r0
 	rd := 20
 
 	a0 -= 60
 	a1 := a0 + aq
 
+	x0, y0 := positionAtAngle(300, 300, a0, r0, 0, 0)
+
 	x, y := positionAtAngle(300, 300, a0, r0, a1, r1)
+
+	if dial%4 == 0 {
+		drawLine(surface, 300, 300, x0, y0)
+	}
+	drawLine(surface, x0, y0, x, y)
 	drawDot(surface, x, y, rd)
+	if dial == 11 {
+		drawDot(surface, 300, 300, rd)
+	}
+	drawDot(surface, x0, y0, rd)
 
 	paddle.Blit(nil, surface, &sdl.Rect{
 		X: int32(x) - (paddle.W / 2),
