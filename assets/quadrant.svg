@@ -28,7 +28,7 @@
      inkscape:document-units="px"
      showgrid="false"
      inkscape:zoom="0.5155987"
-     inkscape:cx="262.80128"
+     inkscape:cx="249.22483"
      inkscape:cy="189.10055"
      inkscape:window-width="1783"
      inkscape:window-height="1030"
@@ -212,13 +212,13 @@
          x="489.59418"
          y="191.01033">60</tspan></text>
     <ellipse
-       style="fill:#9fbc5f;fill-opacity:0.84196275;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:3, 3;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:#97a921;fill-opacity:0.99829501;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:3, 3;stroke-dashoffset:0;stroke-opacity:1"
        id="path47760-6-4"
-       cx="300.49997"
-       cy="300.50024"
+       cx="531.27191"
+       cy="-332.92697"
        rx="190.00003"
        ry="190"
-       inkscape:export-filename="/home/pascky/cyclock/v2/assets/quadrant.png"
+       inkscape:export-filename="/home/pascky/cyclock/v2/assets/back.png"
        inkscape:export-xdpi="96"
        inkscape:export-ydpi="96" />
   </g>

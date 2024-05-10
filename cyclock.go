@@ -100,7 +100,7 @@ func drawDial(surface *sdl.Surface, dot *sdl.Surface, minutes int, paddle *sdl.S
 		aq += (a0 - rt0) * (90 - 360*2) / (rt1 - rt0)
 	}
 
-	r0 := 215 //160 //215 //170
+	r0 := 210 //160 //215 //170
 	r1 := 260 - r0
 	rd := 20
 
@@ -112,7 +112,7 @@ func drawDial(surface *sdl.Surface, dot *sdl.Surface, minutes int, paddle *sdl.S
 
 	if paddle == nil {
 		// just draw lines and pivots
-		drawLine(surface, 300, 300, x0, y0)
+		//drawLine(surface, 300, 300, x0, y0)
 		drawLine(surface, x0, y0, x, y)
 		drawDot(surface, x0, y0, rd, dot)
 	} else {
@@ -174,6 +174,7 @@ func main() {
 	defer window.Destroy()
 
 	font := assetsFont(fontPath, fontSize)
+	secBack := assetsImage("assets/back.png")
 	quadrant := assetsImage("assets/quadrant.png")
 	dot := assetsImage("assets/dot.png")
 
@@ -211,6 +212,11 @@ func main() {
 
 			window.SetTitle(formatTime(minutes))
 
+			secBack.Blit(nil, surface, &sdl.Rect{
+				X: 110,
+				Y: 110,
+				W: 0, H: 0})
+
 			// lines
 			for j := range 12 {
 				drawDial(surface, dot, minutes, nil, j)
@@ -229,8 +235,8 @@ func main() {
 			// second dial and central hinge
 			{
 				a := float64(seconds*6-90) / 180.0 * math.Pi
-				x := int(180.0*math.Cos(a)) + 300
-				y := int(180.0*math.Sin(a)) + 300
+				x := int(120.0*math.Cos(a)) + 300
+				y := int(120.0*math.Sin(a)) + 300
 
 				a += math.Pi / 2.0
 				xa := int(5.0*math.Cos(a)) + 300
