@@ -100,7 +100,7 @@ func drawDial(surface *sdl.Surface, dot *sdl.Surface, minutes int, paddle *sdl.S
 		aq += (a0 - rt0) * (90 - 360*2) / (rt1 - rt0)
 	}
 
-	r0 := 160 //215 //170
+	r0 := 215 //160 //215 //170
 	r1 := 260 - r0
 	rd := 20
 
@@ -229,8 +229,8 @@ func main() {
 			// second dial and central hinge
 			{
 				a := float64(seconds*6-90) / 180.0 * math.Pi
-				x := int(185.0*math.Cos(a)) + 300
-				y := int(185.0*math.Sin(a)) + 300
+				x := int(180.0*math.Cos(a)) + 300
+				y := int(180.0*math.Sin(a)) + 300
 
 				a += math.Pi / 2.0
 				xa := int(5.0*math.Cos(a)) + 300
