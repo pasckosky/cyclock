@@ -132,7 +132,7 @@ func getTime() (int, int) {
 
 	if debug {
 		bigT += 1
-		bigT %= 720
+		bigT %= 1440 // 24 hours
 		return bigT, (bigT / 3) % 60
 
 	}
@@ -173,6 +173,8 @@ func main() {
 	}
 	defer window.Destroy()
 
+	update := make(chan bool)
+
 	font := assetsFont(fontPath, fontSize)
 	secBack := assetsImage("assets/back.png")
 	quadrant := assetsImage("assets/quadrant.png")
@@ -202,12 +204,12 @@ func main() {
 		}
 	}()
 
+	offset := 0
+
 	go func() {
-		for {
-			if !running {
-				return
-			}
-			minutes, seconds := getTime()
+		expected_min := -1
+
+		fullDraw := func(minutes, seconds int) {
 			surface.FillRect(nil, 0)
 
 			window.SetTitle(formatTime(minutes))
@@ -254,7 +256,34 @@ func main() {
 			}
 			drawDot(surface, 300, 300, 20, dot)
 
-			window.UpdateSurface()
+			//window.UpdateSurface()
+			update <- true
+		}
+
+		for {
+			if !running {
+				return
+			}
+			minutes, seconds := getTime()
+
+			minutes += offset
+			minutes %= 1440
+
+			if expected_min == -1 {
+				expected_min = minutes
+			}
+
+			for expected_min != minutes {
+				expected_min++
+				expected_min %= 1440
+				_, seconds = getTime()
+				fullDraw(expected_min, seconds)
+				<-time.After(10 * time.Millisecond)
+			}
+			//fmt.Printf("Offset %d\n", offset)
+
+			fullDraw(minutes, seconds)
+			expected_min = minutes - 1
 
 			if debug {
 				<-time.After(100 * time.Millisecond)
@@ -265,14 +294,33 @@ func main() {
 	}()
 
 	for running {
-		<-time.After(100 * time.Millisecond)
+		select {
+		case <-time.After(100 * time.Millisecond):
+
+		case <-update:
+			window.UpdateSurface()
+		}
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			et := event.GetType()
 
-			switch et {
-			case sdl.QUIT:
+			switch t := event.(type) {
+			case *sdl.QuitEvent:
 				running = false
+
+			case *sdl.KeyboardEvent:
+				if t.State == sdl.RELEASED {
+					switch t.Keysym.Sym {
+					case sdl.K_KP_ENTER:
+						offset += 30
+						fmt.Printf("OFFSET\n")
+
+					case sdl.K_KP_0:
+						offset = 0
+
+					case sdl.K_ESCAPE:
+						running = false
+					}
+				}
 			}
 		}
 	}
