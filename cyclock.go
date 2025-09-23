@@ -117,6 +117,27 @@ func drawDial(surface *sdl.Surface, dot *sdl.Surface, minutes int, paddle *sdl.S
 		drawDot(surface, x0, y0, rd, dot)
 	} else {
 		drawDot(surface, x, y, rd, dot)
+		/*
+			    // Set 'your_texture' as target
+			SDL_SetRenderTarget(your_renderer, your_texture);
+
+			    // We are now printing the rotated image on the texture
+			SDL_RenderCopyEx(your_renderer, // we still use the renderer; it will be automatically printed into the texture 'your_texture'
+			                   your_image,
+			                   &srcrect,
+			                   &dstrect,
+			                   angle,
+			                   &center,
+			                   SDL_FLIP_NONE); // unless you want to flip vertically / horizontally
+
+			    // Set the renderer as target and print the previous texture
+			SDL_SetRenderTarget(your_renderer, NULL);
+			SDL_RenderClear(your_renderer);
+			SDL_RenderCopy (your_renderer, your_texture, NULL, NULL); // here the scale is automatically done
+			SDL_RenderPresent(your_renderer);
+		*/
+		//paddle.CopyEx()
+
 		paddle.Blit(nil, surface, &sdl.Rect{
 			X: int32(x) - (paddle.W / 2),
 			Y: int32(y) - (paddle.H / 2),
@@ -152,6 +173,13 @@ func formatTime(tim int) string {
 	return fmt.Sprintf("time: %2d:%02d", h, m)
 }
 
+func Iif[T any](cond bool, v T, f T) T {
+	if cond {
+		return v
+	}
+	return f
+}
+
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "-d" {
 		debug = true
@@ -179,6 +207,7 @@ func main() {
 	secBack := assetsImage("assets/back.png")
 	quadrant := assetsImage("assets/quadrant.png")
 	dot := assetsImage("assets/dot.png")
+	dot_green := assetsImage("assets/dotgreen.png")
 
 	surface, err := window.GetSurface()
 	if err != nil {
@@ -191,7 +220,7 @@ func main() {
 	// Create a red text with the font
 	paddle := make([]*sdl.Surface, 12)
 	tpaddle := []string{"12", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"}
-	colorText := sdl.Color{G: 255, R: 0, B: 0, A: 255}
+	colorText := sdl.Color{G: 255, R: 255, B: 255, A: 255}
 	for j := range 12 {
 		paddle[j], err = font.RenderUTF8Blended(tpaddle[j], colorText)
 		if err != nil {
@@ -219,6 +248,12 @@ func main() {
 				Y: 110,
 				W: 0, H: 0})
 
+			hour := minutes / 60
+			highligth := (hour % 12)
+			if highligth == 0 {
+				highligth = 12
+			}
+
 			// lines
 			for j := range 12 {
 				drawDial(surface, dot, minutes, nil, j)
@@ -226,7 +261,8 @@ func main() {
 
 			// numbers
 			for j := range 12 {
-				drawDial(surface, dot, minutes, paddle[j], j)
+				d_dot := Iif(highligth == (12-j), dot_green, dot)
+				drawDial(surface, d_dot, minutes, paddle[j], j)
 			}
 
 			quadrant.Blit(nil, surface, &sdl.Rect{
@@ -306,6 +342,22 @@ func main() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				running = false
+
+			case *sdl.OSEvent:
+				fmt.Printf("OS event 0x%x\n", t.Type)
+
+			case *sdl.RenderEvent:
+				fmt.Printf("Render event 0x%x\n", t.Type)
+
+			case *sdl.DisplayEvent:
+				fmt.Printf("Display event 0x%x\n", t.Type)
+				switch t.Type {
+				case sdl.WINDOWEVENT_SHOWN:
+					fmt.Printf("SHOW\n")
+					go func() {
+						update <- true
+					}()
+				}
 
 			case *sdl.KeyboardEvent:
 				if t.State == sdl.RELEASED {
