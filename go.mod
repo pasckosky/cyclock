@@ -1,4 +1,4 @@
-module cyclock
+module github.com/pasckosky/cyclock
 
 go 1.22.1
 
